@@ -10,7 +10,7 @@
 
 #include "dos33.h"
 
-static int debug=0;
+static int debug=1;
 
 static unsigned char sector_buffer[BYTES_PER_SECTOR];
 
