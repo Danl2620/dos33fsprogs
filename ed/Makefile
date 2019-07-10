@@ -10,6 +10,7 @@ ED:	ED.bas
 ed.dsk:	ED
 	$(MKDOS33FS) -d ../dos33fs-utils/tests/empty.dsk $@
 	$(DOS33) -y $@ SAVE A $<
+	$(DOS33) -y $@ HELLO ED
 
 clean:	
 	rm -f *~ *.BAS *.SHAPE *.lst
