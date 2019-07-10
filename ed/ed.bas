@@ -1,0 +1,2 @@
+10 PRINT "ED"
+20 END

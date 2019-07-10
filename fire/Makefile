@@ -17,7 +17,7 @@ fire.dsk:	FIRE FIRE_TINY FIRE_FIRMWARE FIRE_EXTREME FIRE_QKUMBA HELLO COOL_EFFEC
 
 ####
 
-fire:	fire.o
+FIRE:	fire.o
 	$(CC65BIN)/ld65 -o fire fire.o -C ../linker_scripts/apple2_1000.inc
 
 fire.o:	fire.s gr_fast_clear.s vapor_lock.s \
@@ -26,7 +26,7 @@ fire.o:	fire.s gr_fast_clear.s vapor_lock.s \
 
 ####
 
-fire_TINY:	fire_tiny.o
+FIRE_TINY:	fire_tiny.o
 	$(CC65BIN)/ld65 -o fire_TINY fire_tiny.o -C ../linker_scripts/apple2_70.inc
 
 fire_tiny.o:	fire_tiny.s
@@ -34,7 +34,7 @@ fire_tiny.o:	fire_tiny.s
 
 ####
 
-fire_FIRMWARE:	fire_firmware.o
+FIRE_FIRMWARE:	fire_firmware.o
 	$(CC65BIN)/ld65 -o fire_FIRMWARE fire_firmware.o -C ../linker_scripts/apple2_70.inc
 
 fire_firmware.o:	fire_firmware.s
@@ -42,7 +42,7 @@ fire_firmware.o:	fire_firmware.s
 
 ####
 
-fire_EXTREME:	fire_extreme.o
+FIRE_EXTREME:	fire_extreme.o
 	$(CC65BIN)/ld65 -o fire_EXTREME fire_extreme.o -C ../linker_scripts/apple2_70.inc
 
 fire_extreme.o:	fire_extreme.s
@@ -50,7 +50,7 @@ fire_extreme.o:	fire_extreme.s
 
 ####
 
-fire_QKUMBA:	fire_qkumba.o
+FIRE_QKUMBA:	fire_qkumba.o
 	$(CC65BIN)/ld65 -o fire_QKUMBA fire_qkumba.o -C ../linker_scripts/apple2_70.inc
 
 fire_qkumba.o:	fire_qkumba.s
