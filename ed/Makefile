@@ -10,7 +10,8 @@ ED:	ED.bas
 	$(TXT2BAS) < $< > $@
 
 PROG.EXE : hello.o
-	$(CC65BIN)/ld65 -o $@ $< -C ../linker_scripts/apple2_4000.inc $(CC65DIR)/lib/apple2.lib
+##$(CC65BIN)/ld65 -o $@ $< -C ../linker_scripts/apple2_4000.inc $(CC65DIR)/lib/apple2.lib
+	$(CC65BIN)/ld65 -o $@ -S 0x4000 -D __EXEHDR__=0 -t apple2 $< $(CC65DIR)/lib/apple2.lib
 
 %.o : %.s
 	$(CC65BIN)/ca65 -o $@ $<
