@@ -10,11 +10,13 @@ all:	ed.dsk
 ED:	ED.bas
 	$(TXT2BAS) < $< > $@
 
-PROG.EXE : hello.o
-##	$(CC65BIN)/ld65 -o $@ $< -C ../linker_scripts/apple2_4000.inc $(CC65DIR)/lib/apple2.lib
-	$(CC65BIN)/ld65 -o $@ -t $(SYS) -m prog.map $< $(SYS).lib
+PROG.EXE : hello.c.o
+	$(CC65BIN)/ld65 -o $@ -S 0x4000 -D __EXEHDR__=0 -m $@.map -t $(SYS) $< $(CC65DIR)/lib/$(SYS).lib
 
-%.o : %.s
+%.c.s : %.c
+	$(CC65BIN)/cc65 -t apple2 -o $@ $<
+
+%.c.o : %.c.s
 	$(CC65BIN)/ca65 -o $@ $<
 
 ed.dsk:	ED PROG.EXE
