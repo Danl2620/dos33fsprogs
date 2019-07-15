@@ -26,23 +26,21 @@ static const char Text [] = "Hello world!";
 /*****************************************************************************/
 
 unsigned char XSize, YSize;
+unsigned int cursor_position;
 
 /*****************************************************************************/
 /*                                   Code                                    */
 /*****************************************************************************/
 
-void draw_screen (char * status, char * buffer)
+void draw_status(char * status)
 {
     int status_pos = 0;
-
-    /* Clear the screen, put cursor in upper left corner */
-    clrscr ();
 
     /* Bottom line */
     gotoxy(0,YSize-1);
     cputc (CH_LLCORNER);
     status_pos++;
-    cputc (' ');
+    cputc (0xd6);
     while (*status != 0)
     {
         cputc(*status++);
@@ -50,11 +48,28 @@ void draw_screen (char * status, char * buffer)
     }
     chline (XSize - status_pos);
     cputc (CH_LRCORNER);
+}
 
+void draw_screen (char * status, char * buffer)
+{
+    unsigned int len;
+    unsigned int ii;
+
+    /* Clear the screen, put cursor in upper left corner */
+    clrscr ();
+
+    draw_status(status);
 
     /* Write the greeting in the mid of the screen */
     gotoxy (0,0);
-    cprintf (buffer);
+    len = strlen(buffer);
+
+    for (ii = 0; ii < len; ++ii)
+    {
+        char c;
+        c = (ii == cursor_position) ? 0xd6 : buffer[ii];
+        cputc(c);
+    }
 }
 
 int main (void)
@@ -71,6 +86,7 @@ int main (void)
     /* Ask for the screen size */
     screensize (&XSize, &YSize);
 
+    cursor_position = 3;
     len = strlen(Text);
 
     buffer = malloc(max(len+1,512));
