@@ -5,8 +5,9 @@
 
 ; A or <-   : start moving left
 ; D or ->   : start moving right
-; W or up   : jump
-; S or down : crouch or pickup
+; W or up   : jump or elevator/transporter up
+; S or down : crouch or pickup or elevator/transporter down
+; L         : charge gun
 ; space     : action
 ; escape    : quit
 
@@ -15,20 +16,19 @@
 ;          if stand right, stand left
 ;	   if stand left, walk left
 ;	   if walk left, run left
-
+; if up:   if crouching, stand up
+;	   if standing, jump
+;	   if walking, jump
+;	   if running, run-jump
+; if down: if standing, crouch
+;	   if walking, crouch
+;	   if if running, slide-crouch
 
 
 handle_keypress:
 
 	lda	PHYSICIST_STATE
-	cmp	#P_COLLAPSING		; ignore keypress if dying
-	beq	no_keypress
-	cmp	#P_JUMPING		; ignore keypress if jumping
-	beq	no_keypress
-	cmp	#P_SWINGING
-	beq	no_keypress
-	cmp	#P_FALLING
-	beq	no_keypress
+	bmi	no_keypress		; ignore keypress if dying/action
 
 	lda	KEYPRESS						; 4
 	bmi	keypress						; 3
@@ -67,9 +67,13 @@ check_left:
 
 
 	;====================
-	; Left Pressed
+	;====================
+	; Left/A Pressed
+	;====================
 	;====================
 left_pressed:
+	inc	GUN_FIRE		; fire gun if charging
+
 					; left==0
 	lda	DIRECTION		; if facing right, turn to face left
 	bne	left_going_right
@@ -78,14 +82,16 @@ left_going_left:
 	lda	PHYSICIST_STATE
 	cmp	#P_STANDING
 	beq	walk_left
+	cmp	#P_SHOOTING
+	beq	walk_left
 	cmp	#P_WALKING
 	beq	run_left
-	cmp	#P_CROUCHING
-	beq	stand_left
+	and	#STATE_CROUCHING
+	bne	stand_left
 
 	;=============================
 	; already running, do nothing?
-	rts
+	jmp	done_keypress
 
 left_going_right:
 	lda	PHYSICIST_STATE
@@ -95,12 +101,14 @@ left_going_right:
 	beq	stand_right
 	cmp	#P_STANDING
 	beq	stand_left
-	cmp	#P_CROUCHING
+	cmp	#P_SHOOTING
 	beq	stand_left
+	and	#STATE_CROUCHING
+	bne	stand_left
 
 	;===========================
 	; otherwise?
-	rts
+	jmp	done_keypress
 
 	;========================
 	; check for right pressed
@@ -111,14 +119,16 @@ check_right:
 	cmp	#$15
 	bne	check_up
 
-
 	;===================
-	; Right Pressed
+	;===================
+	; Right/D Pressed
+	;===================
 	;===================
 right_pressed:
+	inc	GUN_FIRE		; fire if charging
 
 					; right==1
-	lda	DIRECTION		; if facing right, turn to face left
+	lda	DIRECTION		; if facing left, turn to face right
 	beq	right_going_left
 
 
@@ -126,14 +136,16 @@ right_going_right:
 	lda	PHYSICIST_STATE
 	cmp	#P_STANDING
 	beq	walk_right
+	cmp	#P_SHOOTING
+	beq	walk_right
 	cmp	#P_WALKING
 	beq	run_right
-	cmp	#P_CROUCHING
-	beq	stand_right
+	and	#STATE_CROUCHING
+	bne	stand_right
 
 	;=============================
 	; already running, do nothing?
-	rts
+	jmp	done_keypress
 
 right_going_left:
 	lda	PHYSICIST_STATE
@@ -143,12 +155,15 @@ right_going_left:
 	beq	stand_left
 	cmp	#P_STANDING
 	beq	stand_right
-	cmp	#P_CROUCHING
-	beq	stand_left
+	cmp	#P_SHOOTING
+	beq	stand_right
+	and	#STATE_CROUCHING
+	bne	stand_right
+
 
 	;===========================
 	; otherwise?
-	rts
+	jmp	done_keypress
 
 
 	;=====================
@@ -189,8 +204,7 @@ run_right:
 
 update_state:
 	sta	PHYSICIST_STATE
-	bit	KEYRESET
-	rts
+	jmp	done_keypress
 
 
 
@@ -204,45 +218,193 @@ check_up:
 	cmp	#$0B
 	bne	check_down
 up:
-	;========================
-	; Jump -- Up Pressed
-	;========================
+	;=============================
+	;=============================
+	; Up/W Pressed -- Jump, Get up
+	;=============================
+	;=============================
 
+	lda	PHYSICIST_STATE		; shoot if charging
+	cmp	#P_CROUCH_SHOOTING
+	beq	up_no_fire
+
+	inc	GUN_FIRE
+up_no_fire:
+
+	lda	ON_ELEVATOR
+	beq	up_not_elevator
+
+up_on_elevator:
+	lda	#P_ELEVATING_UP
+	jmp	change_state_clear_gait
+
+up_not_elevator:
+
+	lda	PHYSICIST_STATE
+	cmp	#P_CROUCHING
+	beq	stand_up
+	cmp	#P_CROUCH_SHOOTING
+	beq	stand_up_shoot
+	cmp	#P_RUNNING
+	beq	run_jump
+
+up_jump:
 	lda	#P_JUMPING
-	sta	PHYSICIST_STATE
-	lda	#0
-	sta	GAIT
+	jmp	change_state_clear_gait
 
-	jmp	done_keypress
+run_jump:
+	lda	#P_JUMPING|STATE_RUNNING
+	jmp	change_state_clear_gait
 
+stand_up:
+	lda	#P_STANDING
+	jmp	change_state_clear_gait
+
+stand_up_shoot:
+	lda	#P_SHOOTING
+	jmp	change_state_clear_gait
+
+
+	;==========================
 check_down:
 	cmp	#'S'
 	beq	down
 	cmp	#$0A
+	bne	check_gun
+
+	;==========================
+	;==========================
+	; Down/S Pressed -- Crouch
+	;==========================
+	;==========================
+down:
+
+	lda	PHYSICIST_STATE		; shoot if charging
+	cmp	#P_SHOOTING
+	beq	down_no_fire
+
+	inc	GUN_FIRE
+down_no_fire:
+
+	lda	ON_ELEVATOR
+	beq	down_not_elevator
+
+down_on_elevator:
+	lda	#P_ELEVATING_DOWN
+	jmp	change_state_clear_gait
+
+down_not_elevator:
+	lda	PHYSICIST_STATE
+	cmp	#P_SHOOTING
+	bne	start_crouch
+
+start_crouch_shoot:
+	and	#STATE_RUNNING
+	ora	#P_CROUCH_SHOOTING
+	jmp	change_state_clear_gait
+
+start_crouch:
+	and	#STATE_RUNNING
+	beq	start_crouch_norun
+
+	ldx	#4		; slide a bit
+	stx	GAIT
+	ora	#P_CROUCHING
+	sta	PHYSICIST_STATE
+	jmp	done_keypress
+
+start_crouch_norun:
+	ora	#P_CROUCHING
+	jmp	change_state_clear_gait
+
+
+	;==========================
+
+check_gun:
+	cmp	#'L'
 	bne	check_space
 
 	;======================
-	; Crouch
+	; 'L' to charge gun
 	;======================
-down:
-	lda	#P_CROUCHING
-	sta	PHYSICIST_STATE
-	lda	#0
-	sta	GAIT
+charge_gun:
+	lda	HAVE_GUN		; only if have gun
+	beq	done_keypress
+
+	lda	GUN_STATE
+	beq	not_already_firing
+
+	inc	GUN_FIRE		; if charging, fire
 
 	jmp	done_keypress
+
+not_already_firing:
+
+	inc	GUN_STATE
+
+	lda	PHYSICIST_STATE
+	and	#STATE_CROUCHING
+	beq	crouch_charge
+	ldy	#P_CROUCH_SHOOTING
+	bne	crouch_charge_go	; bra
+crouch_charge:
+	ldy	#P_SHOOTING
+crouch_charge_go:
+	sty	PHYSICIST_STATE
+
+	jmp	shoot
+
 
 check_space:
 	cmp	#' '
 	beq	space
-	cmp	#$15
-	bne	unknown
+;	cmp	#$15		; ascii 21=??
+	jmp	unknown
 
 	;======================
-	; Kick
+	; SPACE -- Kick or shoot
 	;======================
 space:
+	lda	HAVE_GUN
+	beq	kick
+
+	; shoot pressed
+
+	inc	GUN_FIRE			; if charging, shoot
+shoot:
+	lda	PHYSICIST_STATE		; if in stance, then shoot
+	cmp	#P_SHOOTING
+	beq	in_position
+	cmp	#P_CROUCH_SHOOTING
+	bne	no_stance
+
+in_position:
+	lda	#1
+	sta	LASER_OUT
+	jmp	done_keypress
+
+no_stance:
+	and	#STATE_CROUCHING
+	beq	stand_stance
+
+crouch_stance:
+	lda	#P_CROUCH_SHOOTING
+	jmp	change_state_clear_gait
+
+stand_stance:
+	lda	#P_SHOOTING
+	jmp	change_state_clear_gait
+
+kick:
+	bit	PHYSICIST_STATE		; crouching state in V now
+	bvc	kick_standing
+
+	lda	#P_CROUCH_KICKING
+	jmp	kick_final
+
+kick_standing:
 	lda	#P_KICKING
+kick_final:
 	sta	PHYSICIST_STATE
 	lda	#15
 	sta	GAIT
@@ -251,3 +413,10 @@ done_keypress:
 	bit	KEYRESET	; clear the keyboard strobe		; 4
 
 	rts								; 6
+
+
+change_state_clear_gait:
+	sta	PHYSICIST_STATE
+	lda	#0
+	sta	GAIT
+	jmp	done_keypress

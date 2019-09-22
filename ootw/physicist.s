@@ -1,7 +1,6 @@
 	;=======================================
 	; Move physicist based on current state
 	;
-	; TODO: only update on even frames to slow things down?
 
 move_physicist:
 	lda	PHYSICIST_STATE
@@ -69,7 +68,18 @@ pstate_table_lo:
 	.byte <physicist_kicking	; 04
 	.byte <physicist_jumping	; 05
 	.byte <physicist_collapsing	; 06
-	.byte <physicist_falling	; 07
+	.byte <physicist_falling_sideways; 07
+	.byte <physicist_standing	; 08 swinging
+	.byte <physicist_standing	; 09 elevator up
+	.byte <physicist_standing	; 0A elevator down
+	.byte <physicist_shooting	; 0B
+	.byte <physicist_falling_down	; 0C
+	.byte <physicist_impaled	; 0D
+	.byte <physicist_crouch_shooting; 0E
+	.byte <physicist_crouch_kicking	; 0F
+	.byte <physicist_disintegrating	; 10
+
+
 pstate_table_hi:
 	.byte >physicist_standing
 	.byte >physicist_walking
@@ -78,7 +88,16 @@ pstate_table_hi:
 	.byte >physicist_kicking
 	.byte >physicist_jumping
 	.byte >physicist_collapsing
-	.byte >physicist_falling
+	.byte >physicist_falling_sideways
+	.byte >physicist_standing	; 08 swinging
+	.byte >physicist_standing	; 09 elevator up
+	.byte >physicist_standing	; 0A elevator down
+	.byte >physicist_shooting	; 0B
+	.byte >physicist_falling_down	; 0C
+	.byte >physicist_impaled	; 0D
+	.byte >physicist_crouch_shooting; 0E
+	.byte >physicist_crouch_kicking	; 0F
+	.byte >physicist_disintegrating	; 10
 
 ; Urgh, make sure this doesn't end up at $FF or you hit the
 ;	NMOS 6502 bug
@@ -96,7 +115,9 @@ pjump:
 
 draw_physicist:
 
-	ldx	PHYSICIST_STATE
+	lda	PHYSICIST_STATE
+	and	#$1f			; mask off high state bits
+	tax
 	lda	pstate_table_lo,x
 	sta	pjump
 	lda	pstate_table_hi,x
@@ -117,6 +138,21 @@ physicist_standing:
 	sta	INH
 
 	jmp	finally_draw_him
+
+;==================================
+; SHOOTING
+;==================================
+
+physicist_shooting:
+
+	lda	#<shooting1
+	sta	INL
+
+	lda	#>shooting1
+	sta	INH
+
+	jmp	finally_draw_him
+
 
 ;==================================
 ; KICKING
@@ -148,6 +184,22 @@ physicist_crouching:
 
 	; FIXME: we have an animation?
 
+	; if we have some gait left, slide a bit
+	lda	GAIT
+	beq	crouch_done_slide
+
+	dec	GAIT
+	bne	crouch_done_slide
+
+	lda	DIRECTION
+	beq	p_slide_left
+	inc	PHYSICIST_X
+	jmp	crouch_done_slide
+p_slide_left:
+	dec	PHYSICIST_X
+
+crouch_done_slide:
+
 	lda	#<crouch2
 	sta	INL
 
@@ -155,6 +207,44 @@ physicist_crouching:
 	sta	INH
 
 	jmp	finally_draw_him
+
+;===================================
+; CROUCH KICKING
+;===================================
+
+physicist_crouch_kicking:
+
+	dec	GAIT
+	lda	GAIT
+	bpl	still_kicking
+
+	lda	#P_CROUCHING
+	sta	PHYSICIST_STATE
+
+still_kicking:
+
+	lda	#<crouch_kicking
+	sta	INL
+
+	lda	#>crouch_kicking
+	sta	INH
+
+	jmp	finally_draw_him
+
+;===================================
+; CROUCH SHOOTING
+;===================================
+
+physicist_crouch_shooting:
+
+	lda	#<crouch_shooting
+	sta	INL
+
+	lda	#>crouch_shooting
+	sta	INH
+
+	jmp	finally_draw_him
+
 
 ;===================================
 ; JUMPING
@@ -166,11 +256,24 @@ physicist_jumping:
 	cmp	#32
 	bcc	still_jumping	; blt
 
+	; done juming
+	lda	#STATE_RUNNING
+	bit	PHYSICIST_STATE
+	beq	jump_to_stand
+
+jump_to_run:
+	lda	#0
+	sta	GAIT
+	lda	#P_RUNNING
+	sta	PHYSICIST_STATE
+	jmp	physicist_running
+
+jump_to_stand:
 	lda	#0
 	sta	GAIT
 	lda	#P_STANDING
 	sta	PHYSICIST_STATE
-	jmp	physicist_walking
+	jmp	physicist_standing
 
 still_jumping:
 
@@ -187,10 +290,25 @@ still_jumping:
 
 	inc	GAIT
 
+	lda	#STATE_RUNNING
+	bit	PHYSICIST_STATE
+	beq	jump_change_x_regular
+
+jump_change_x_running:
+	lda	GAIT
+					; 1/4 not enough, 1/2 too much
+					; 3/8?
+	and	#$7
+	cmp	#5
+	bcc	jump_no_move
+	jmp	jump_change_x
+
+	; only change X every 8th frame
+jump_change_x_regular:
 	lda	GAIT
 	and	#$7
 	bne	jump_no_move
-
+jump_change_x:
 	lda	DIRECTION
 	beq	jump_left
 
@@ -295,12 +413,49 @@ no_collapse_progress:
 
 	jmp	finally_draw_him
 
+;==================================
+; DISINTEGRATING
+;==================================
+
+physicist_disintegrating:
+
+	lda	GAIT
+	cmp	#28
+	bne	disintegrate_not_done
+
+disintegrate_really_dead:
+	lda	#$ff
+	sta	GAME_OVER
+	jmp	finally_draw_him
+
+disintegrate_not_done:
+
+	ldx	GAIT
+
+	lda	disintegrate_progression,X
+	sta	INL
+	lda	disintegrate_progression+1,X
+	sta	INH
+
+	lda	FRAMEL
+	and	#$7
+	bne	no_disintegrate_progress
+
+	inc	GAIT
+	inc	GAIT
+
+no_disintegrate_progress:
+
+
+	jmp	finally_draw_him
+
+
 
 ;==================================
-; FALLING
+; FALLING SIDEWAYS
 ;==================================
 
-physicist_falling:
+physicist_falling_sideways:
 
 
 	lda	FRAMEL
@@ -314,6 +469,7 @@ physicist_falling:
 no_fall_progress:
 
 	lda	PHYSICIST_Y
+fall_sideways_destination_smc:
 	cmp	#22
 	bne	still_falling
 done_falling:
@@ -334,6 +490,79 @@ still_falling:
 
 	jmp	finally_draw_him
 
+
+;==================================
+; FALLING DOWN
+;==================================
+
+physicist_falling_down:
+
+falling_stop_smc:	; $2C to fall, $4C for not
+	bit	still_falling_down
+
+	lda	FRAMEL
+	and	#$1
+	bne	no_fall_down_progress
+
+	inc	PHYSICIST_Y	; must be mul of 2
+	inc	PHYSICIST_Y
+
+no_fall_down_progress:
+
+	lda	PHYSICIST_Y
+fall_down_destination_smc:
+	cmp	#22
+	bne	still_falling_down
+done_falling_down:
+
+	lda	#P_CROUCHING
+	sta	PHYSICIST_STATE
+	jmp	physicist_crouching
+
+still_falling_down:
+
+	lda	#<phys_stand
+	sta	INL
+
+	lda	#>phys_stand
+	sta	INH
+
+	jmp	finally_draw_him
+
+
+
+;==================================
+; IMPALED
+;==================================
+
+physicist_impaled:
+
+	lda	GAIT
+	cmp	#$80
+	bne	impale_not_done
+
+impale_really_dead:
+	lda	#$ff
+	sta	GAME_OVER
+	jmp	finally_draw_him
+
+impale_not_done:
+
+	cmp	#2		; slide down one more
+	bne	impale_enough
+	inc	PHYSICIST_Y
+	inc	PHYSICIST_Y
+
+impale_enough:
+	inc	GAIT
+
+	lda	#<physicist_spike_sprite
+	sta	INL
+
+	lda	#>physicist_spike_sprite
+	sta	INH
+
+	jmp	finally_draw_him
 
 ;=============================
 ; Actually Draw Him
@@ -361,16 +590,40 @@ facing_right:
 
 
 ;======================================
+;======================================
 ; Check screen limits
 ;======================================
+;======================================
+; If too far right or left, stop at boundary
+; If also > 39 or < -4 then exit room
 
 check_screen_limit:
 
 	clc
 	lda	PHYSICIST_X
 	adc	#$80
-	cmp	LEFT_LIMIT
+	cmp	LEFT_WALK_LIMIT
 	bcs	just_fine_left		; (bge==bcs)
+
+left_on_screen:
+
+	; if limit was -4, means we are off screen
+	; otherwise, stop physicist at limit
+
+	lda	LEFT_WALK_LIMIT
+	cmp	#($80 - 4)
+	beq	too_far_left
+
+left_stop_at_barrier:
+	lda     #0
+        sta     PHYSICIST_STATE
+
+        lda     LEFT_WALK_LIMIT
+        sec
+        sbc     #$7f
+        sta     PHYSICIST_X
+
+	rts
 
 too_far_left:
 	lda	#1
@@ -382,8 +635,28 @@ just_fine_left:
 	; Check right edge of screen
 
 ;	lda	PHYSICIST_X
-	cmp	RIGHT_LIMIT
+	cmp	RIGHT_WALK_LIMIT
 	bcc	just_fine_right		; blt
+
+
+right_on_screen:
+
+	; if limit was 39, means we are off screen
+	; otherwise, stop physicist at limit
+
+	lda	RIGHT_WALK_LIMIT
+	cmp	#($80 + 39)
+	beq	too_far_right
+
+right_stop_at_barrier:
+	lda	#0
+	sta	PHYSICIST_STATE
+
+	lda	RIGHT_WALK_LIMIT
+	clc
+	adc	#$7f
+	sta	PHYSICIST_X
+	rts
 
 too_far_right:
 	lda	#2

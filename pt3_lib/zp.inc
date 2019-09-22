@@ -1,38 +1,4 @@
-;; Zero page monitor routines addresses
-
-WNDLFT	= $20
-WNDWDTH	= $21
-WNDTOP	= $22
-WNDBTM	= $23
-CH	= $24
-CV	= $25
-GBASL	= $26
-GBASH	= $27
-BASL	= $28
-BASH	= $29
-BAS2L	= $2A
-BAS2H	= $2B
-H2	= $2C
-V2	= $2D
-MASK	= $2E
-LASTIN	= $3F
-COLOR	= $30
-MODE	= $31
-INVFLG	= $32
-PROMPT	= $33
-YSAV	= $34
-YSAV1	= $35
-CSWL	= $36		; address of COUT1 routine
-CSWH	= $37
-KSWL	= $38		; key in routine
-KSWH	= $39
-
-SEEDL	=	$4E
-SEEDH	=	$4F
-
-
-; dos33 zero page = 26-2f, 35-38, 3e 3f 40-4d 
-; overlap applesoft  67-6a,6f,70,af,b0,ca-cd,d8 
+;; Zero page addresses
 
 AY_REGISTERS	= $70
 A_FINE_TONE	= $70
@@ -43,6 +9,7 @@ C_FINE_TONE	= $74
 C_COARSE_TONE	= $75
 NOISE		= $76
 ENABLE		= $77
+PT3_MIXER_VAL	= $77
 A_VOLUME	= $78
 B_VOLUME	= $79
 C_VOLUME	= $7A
@@ -63,5 +30,4 @@ MB_ADDRL	= $86
 MB_ADDRH	= $87
 DONE_PLAYING	= $88
 DONE_SONG	= $89
-
-TEMP		= $FA
+PT3_TEMP	= $8A

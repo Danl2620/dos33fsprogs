@@ -11,43 +11,27 @@ ootw_c2:
 
 	; Initialize some variables
 
-	lda	#0
-	sta	GAME_OVER
-	sta	PHYSICIST_STATE
-
-	lda     #22
-	sta     PHYSICIST_Y
-	lda     #20
-	sta     PHYSICIST_X
-
-	lda     #1
-	sta     DIRECTION
-
 	;=======================
 	; Run the intro
 	;=======================
 
-;	jsr	ootw_c2_intro
+	jsr	ootw_c2_intro
 
 	;=======================
 	; Enter the game
 	;=======================
+ootw_c2_restart:
 
 	jsr	ootw_cage
+	lda	GAME_OVER
+	cmp	#$ff
+	beq	quit_level
 
 	;=======================
 	; Start Level After Cage
 	;=======================
 
-	lda     #1
-	sta     DIRECTION
-	lda     #22
-	sta     PHYSICIST_Y
-	lda     #24
-	sta     PHYSICIST_X
-	lda     #0
-	sta     PHYSICIST_STATE
-	sta     WHICH_JAIL
+	jsr	ootw_jail_init
 
 	;=========================
 	; c2_new_room
@@ -59,35 +43,29 @@ c2_new_room:
 	sta	GAME_OVER
 
 	lda	WHICH_JAIL
-	cmp	#4
+	cmp	#7
 	bcs	elevator_room		; bge
 jail_room:
 	jsr	ootw_jail
 	jmp	c2_check_done
 
 elevator_room:
-	cmp	#8
-	bcs	multilevel_room		; bge
 	jsr	ootw_elevator
-	jmp	c2_check_done
-
-multilevel_room:
-	; FIXME
-
-
 
 c2_check_done:
 	lda	GAME_OVER
 	cmp	#$ff
 	beq	quit_level
 
-	; only exit if done level
-	; FIXME: or quit pressed?
-
-	lda	WHICH_JAIL
-	cmp	#11
+	cmp	#77
 	bne	c2_new_room
 
+;=========================
+; end of level
+;=========================
+	lda	#3
+	sta	WHICH_LOAD
+	rts
 
 ;===========================
 ; quit_level
@@ -115,7 +93,10 @@ wait_loop:
 
 	lda	KEYRESET		; clear strobe
 
-	jmp	ootw_c2
+	lda	#0
+	sta	GAME_OVER
+
+	jmp	ootw_c2_restart
 
 
 end_message:
@@ -126,27 +107,52 @@ end_message:
 .include "ootw_c2_jail.s"
 .include "ootw_c2_elevator.s"
 .include "ootw_c2_intro.s"
-.include "physicist.s"
 .include "text_print.s"
 .include "gr_pageflip.s"
 .include "gr_unrle.s"
 .include "gr_fast_clear.s"
 .include "gr_copy.s"
+.include "gr_copy_offset.s"
 .include "gr_putsprite.s"
 .include "gr_putsprite_flipped.s"
 .include "gr_putsprite_crop.s"
 .include "gr_offsets.s"
+.include "gr_offsets_hl.s"
 .include "gr_run_sequence.s"
 .include "gr_overlay.s"
-.include "random16.s"
+.include "gr_vlin.s"
+.include "gr_hlin.s"
+;.include "random16.s"
 .include "keyboard.s"
 
+.include "physicist.s"
+.include "alien.s"
+.include "friend.s"
+
+.include "gun.s"
+.include "blast.s"
+.include "laser.s"
+.include "alien_laser.s"
+.include "shield.s"
+.include "door.s"
+.include "collision.s"
+
+; background miners
+.include "ootw_c2_miners.s"
+
 ; room backgrounds
-.include "ootw_graphics/cage/ootw_c2_cage.inc"
+.include "ootw_graphics/l2cage/ootw_c2_cage.inc"
 .include "ootw_graphics/l2jail/ootw_c2_jail.inc"
 ; sprites
-.include "ootw_graphics/sprites/sprites_physicist.inc"
+.include "ootw_graphics/sprites/physicist.inc"
+.include "ootw_graphics/sprites/alien.inc"
+.include "ootw_graphics/sprites/friend.inc"
 ; intro
 .include "ootw_graphics/l2intro/ootw_l2intro.inc"
+; city movie
+.include "ootw_graphics/l2city/city_movie.inc"
+; laser movie
+.include "ootw_graphics/l2laser/ootw_c2_laser.inc"
 
+.include "audio.s"
 

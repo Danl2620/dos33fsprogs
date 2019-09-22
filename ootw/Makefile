@@ -5,46 +5,59 @@ PNG2RLE = ../gr-utils/png2rle
 PNG2LZ4 = ../gr-utils/png2lz4
 
 
-all:	ootw.dsk
+all:	ootw.dsk ootw_side2.dsk
 
-ootw.dsk:	HELLO LOADER INTRO OOTW OOTW_C2 #COMPRESS-TEST
+ootw.dsk:	HELLO LOADER INTRO OOTW_C1 OOTW_C2 OOTW_C3 OOTW_C4 OOTW_C5
+	cp empty.dsk ootw.dsk
 	$(DOS33) -y ootw.dsk SAVE A HELLO
 	$(DOS33) -y ootw.dsk BSAVE -a 0x1400 LOADER
 	$(DOS33) -y ootw.dsk BSAVE -a 0x1700 INTRO
-	$(DOS33) -y ootw.dsk BSAVE -a 0x1700 OOTW
+	$(DOS33) -y ootw.dsk BSAVE -a 0x1700 OOTW_C1
 	$(DOS33) -y ootw.dsk BSAVE -a 0x1700 OOTW_C2
+	$(DOS33) -y ootw.dsk BSAVE -a 0x1700 OOTW_C3
+	$(DOS33) -y ootw.dsk BSAVE -a 0x1700 OOTW_C4
+	$(DOS33) -y ootw.dsk BSAVE -a 0x1700 OOTW_C5
+#	$(DOS33) -y ootw.dsk BSAVE -a 0x1700 AUDIO_TEST
 #	$(DOS33) -y ootw.dsk BSAVE -a 0x2000 COMPRESS-TEST
+
+ootw_side2.dsk:	HELLO2 LOADER2 ENDING
+	cp empty.dsk ootw_side2.dsk
+	$(DOS33) -y ootw_side2.dsk SAVE A HELLO2 HELLO
+	$(DOS33) -y ootw_side2.dsk BSAVE -a 0x1400 LOADER2 LOADER
+	$(DOS33) -y ootw_side2.dsk BSAVE -a 0x1700 ENDING
+
 
 
 ####
 
-OOTW:	ootw.o
-	ld65 -o OOTW ootw.o -C ../linker_scripts/apple2_1700.inc
+OOTW_C1:	ootw_c1.o
+	ld65 -o OOTW_C1 ootw_c1.o -C ../linker_scripts/apple2_1700.inc
 
-ootw.o:	ootw.s \
+ootw_c1.o:	ootw_c1.s \
 	gr_copy.s gr_fast_clear.s gr_pageflip.s gr_unrle.s \
 	gr_putsprite.s gr_putsprite_flipped.s gr_putsprite_crop.s \
-	gr_make_quake.s gr_overlay.s zp.inc keyboard.s \
-	ootw_sluggy.s ootw_beast.s \
-	ootw_rope.s earthquake.s ootw_mesa.s \
-	ootw_pool.s ootw_cavern.s physicist.s random16.s \
-	ootw_cut_slug.s ootw_cut_beast.s \
-	ootw_graphics/pool/ootw_pool.inc \
-	ootw_graphics/underwater/ootw_underwater.inc \
-	ootw_graphics/caves/ootw_cavern.inc \
-	ootw_graphics/caves/ootw_cavern2.inc \
-	ootw_graphics/caves/ootw_cavern3.inc \
-	ootw_graphics/rope/ootw_rope.inc \
-	ootw_graphics/rope/ootw_swing.inc \
-	ootw_graphics/endl1/ootw_l1end.inc \
-	ootw_graphics/sprites/sprites_physicist.inc \
-	ootw_graphics/sprites/sprites_slugs.inc \
-	ootw_graphics/sprites/sprites_ootw.inc \
-	ootw_graphics/sprites/sprites_beast.inc \
-	ootw_graphics/end_scenes/ootw_beast_end.inc \
-	ootw_graphics/end_scenes/ootw_beast_intro.inc \
-	ootw_graphics/end_scenes/ootw_slug_end.inc
-	ca65 -o ootw.o ootw.s -l ootw.lst
+	gr_hlin.s gr_make_quake.s gr_overlay.s zp.inc keyboard.s \
+	collision.s \
+	ootw_c1_sluggy.s ootw_c1_beast.s \
+	ootw_c1_arrival.s ootw_c1_rope.s earthquake.s ootw_c1_mesa.s \
+	ootw_c1_pool.s ootw_c1_cavern.s physicist.s random16.s \
+	ootw_graphics/l1pool/ootw_pool.inc \
+	ootw_graphics/l1underwater/ootw_underwater.inc \
+	ootw_graphics/l1caves/ootw_cavern.inc \
+	ootw_graphics/l1caves/ootw_cavern2.inc \
+	ootw_graphics/l1caves/ootw_cavern3.inc \
+	ootw_graphics/l1rope/ootw_rope.inc \
+	ootw_graphics/l1rope/ootw_swing.inc \
+	ootw_graphics/l1end/ootw_l1end.inc \
+	ootw_graphics/sprites/physicist.inc \
+	ootw_graphics/sprites/physicist_l1_swim.inc \
+	ootw_graphics/sprites/slugs.inc \
+	ootw_graphics/sprites/l1_background.inc \
+	ootw_graphics/sprites/beast.inc \
+	ootw_graphics/l1end_scenes/ootw_beast_end.inc \
+	ootw_graphics/l1end_scenes/ootw_beast_intro.inc \
+	ootw_graphics/l1end_scenes/ootw_slug_end.inc
+	ca65 -o ootw_c1.o ootw_c1.s -l ootw_c1.lst
 
 ####
 
@@ -52,14 +65,76 @@ OOTW_C2:	ootw_c2.o
 	ld65 -o OOTW_C2 ootw_c2.o -C ../linker_scripts/apple2_1700.inc
 
 ootw_c2.o:	ootw_c2.s \
-	gr_copy.s gr_fast_clear.s gr_pageflip.s gr_unrle.s \
+	gr_copy.s gr_copy_offset.s gr_fast_clear.s gr_pageflip.s gr_unrle.s \
+	gr_hlin.s gr_putsprite.s gr_putsprite_flipped.s gr_putsprite_crop.s \
+	keyboard.s gr_run_sequence.s audio.s \
+	alien_laser.s \
+	physicist.s alien.s friend.s \
+	collision.s door.s laser.s shield.s blast.s gun.s \
+	ootw_c2_miners.s \
+	ootw_graphics/sprites/physicist.inc \
+	ootw_graphics/sprites/alien.inc \
+	ootw_graphics/sprites/friend.inc \
+	ootw_c2_cage.s ootw_c2_jail.s ootw_c2_elevator.s ootw_c2_intro.s \
+	ootw_graphics/l2cage/ootw_c2_cage.inc \
+	ootw_graphics/l2jail/ootw_c2_jail.inc \
+	ootw_graphics/l2intro/ootw_l2intro.inc \
+	ootw_graphics/l2laser/ootw_c2_laser.inc
+	ca65 -o ootw_c2.o ootw_c2.s -l ootw_c2.lst
+
+####
+
+OOTW_C3:	ootw_c3.o
+	ld65 -o OOTW_C3 ootw_c3.o -C ../linker_scripts/apple2_1700.inc
+
+ootw_c3.o:	ootw_c3.s \
+	gr_copy.s gr_copy_offset.s gr_fast_clear.s gr_pageflip.s gr_unrle.s \
+	gr_putsprite.s gr_putsprite_flipped.s gr_putsprite_crop.s \
+	keyboard.s \
+	ootw_c3_vent.s \
+	ootw_graphics/sprites/physicist_rolling.inc \
+	ootw_graphics/l3vent/ootw_c3_vent.inc
+	ca65 -o ootw_c3.o ootw_c3.s -l ootw_c3.lst
+
+###
+
+OOTW_C4:	ootw_c4.o
+	ld65 -o OOTW_C4 ootw_c4.o -C ../linker_scripts/apple2_1700.inc
+
+ootw_c4.o:	ootw_c4.s \
+	gr_copy.s gr_twoscreen_scroll.s gr_fast_clear.s gr_pageflip.s \
+	gr_unrle.s gr_hlin.s \
 	gr_putsprite.s gr_putsprite_flipped.s gr_putsprite_crop.s \
 	keyboard.s gr_run_sequence.s physicist.s \
-	ootw_graphics/sprites/sprites_physicist.inc \
-	ootw_c2_cage.s ootw_c2_jail.s ootw_c2_elevator.s ootw_c2_intro.s \
-	ootw_graphics/cage/ootw_c2_cage.inc \
-	ootw_graphics/l2intro/ootw_l2intro.inc
-	ca65 -o ootw_c2.o ootw_c2.s -l ootw_c2.lst
+	collision.s alien.s alien_laser.s \
+	ootw_c4_city.s ootw_c4_action.s \
+	door.s laser.s shield.s blast.s gun.s charger.s \
+	ootw_graphics/sprites/physicist.inc \
+	ootw_graphics/l4city/ootw_c4_city.inc
+	ca65 -o ootw_c4.o ootw_c4.s -l ootw_c4.lst
+
+###
+
+OOTW_C5:	ootw_c5.o
+	ld65 -o OOTW_C5 ootw_c5.o -C ../linker_scripts/apple2_1700.inc
+
+ootw_c5.o:	ootw_c5.s \
+	gr_copy.s gr_copy_offset.s gr_fast_clear.s gr_pageflip.s gr_unrle.s \
+	gr_putsprite.s gr_putsprite_flipped.s gr_putsprite_crop.s \
+	keyboard.s gr_run_sequence.s physicist.s ootw_c5_cave.s \
+	collision.s door.s gun.s blast.s shield.s \
+	ootw_graphics/sprites/physicist.inc \
+	ootw_graphics/l5cave/ootw_c5_cave.inc
+	ca65 -o ootw_c5.o ootw_c5.s -l ootw_c5.lst
+
+
+####
+
+AUDIO_TEST:	audio.o
+	ld65 -o AUDIO_TEST audio.o -C ../linker_scripts/apple2_1700.inc
+
+audio.o:	audio.s
+	ca65 -o audio.o audio.s -l audio.lst
 
 
 ####
@@ -174,10 +249,38 @@ loader.o:	loader.s
 
 ####
 
+LOADER2:	loader2.o
+	ld65 -o LOADER2 loader2.o -C ../linker_scripts/apple2_1400.inc
+
+loader2.o:	loader2.s
+	ca65 -o loader2.o loader2.s -l loader2.lst
+
+
+####
+
 
 HELLO:  hello.bas
 	../asoft_basic-utils/tokenize_asoft < hello.bas > HELLO
 
+####
+
+
+HELLO2:  hello2.bas
+	../asoft_basic-utils/tokenize_asoft < hello2.bas > HELLO2
+
+
+#####
+
+ENDING:	ending.o
+	ld65 -o ENDING ending.o -C ../linker_scripts/apple2_1700.inc
+
+ending.o:	ending.s \
+	pt3_lib_core.s pt3_lib_init.s pt3_lib_mockingboard.s \
+	pt3_setup.s pt3_lib_irq_handler.s interrupt_handler.s \
+	ootw_graphics/l15final/ootw_c15_final.inc \
+	ootw_graphics/l16end/ootw_c16_end.inc \
+	ootw_audio/ootw_outro.pt3
+	ca65 -o ending.o ending.s -l ending.lst
 #####
 
 compress_test.inc:	intro_graphics/07_soda/drinking01.png
@@ -194,7 +297,8 @@ compress_test.o:	compress_test.s lz4_decode.s compress_test.inc
 #####
 
 clean:		
-		rm -f *~ *.o *.lst *.lz4 HELLO OOTW OOTW_C2 INTRO LOADER \
-			COMPRESS-TEST \
+		rm -f *~ *.o *.lst *.lz4 HELLO \
+			OOTW_C1 OOTW_C2 OOTW_C3 OOTW_C4 INTRO LOADER \
+			COMPRESS-TEST AUDIO_TEST \
 			intro_data_01 intro_data_04 intro_data_06 \
 			intro_data_08 intro_data_09

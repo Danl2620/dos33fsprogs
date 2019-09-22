@@ -11,6 +11,8 @@
 
 PT3_LOC = song
 
+PT3_USE_ZERO_PAGE = 1
+
 start_rasterbars:
 
 	;===================
@@ -30,72 +32,12 @@ start_rasterbars:
 	lda	#1
 	sta	LOOP
 
-	;=================
-	; Configure mockingboard
-
-	;============================
-	; Check for Apple II/II+/IIc
-	;============================
-
-	lda	$FBB3		; IIe and newer is $06
-	cmp	#6
-	beq	apple_iie_or_newer
-
-	; Apple II/II+
-
-	bne	done_apple_detect
-
-apple_iie_or_newer:
-	lda	$FBC0           ; 0 on a IIc
-	bne	done_apple_detect
-apple_iic:
-	; activate IIc mockingboard?
-	; this might only be necessary to allow detection
-	; I get the impression the Mockingboard 4c activates
-	; when you access any of the 6522 ports in Slot 4
-	lda	#$ff
-	sta	$C403
-	sta	$C404
-
-done_apple_detect:
 
 	;=======================
         ; Detect mockingboard
         ;========================
 
-        ; Note, we do this, but then ignore it, as sometimes
-        ; the test fails and then you don't get music.
-        ; In theory this could do bad things if you had something
-        ; easily confused in slot4, but that's probably not an issue.
-
-        ; print detection message
-
-;       lda     #<mocking_message               ; load loading message
-;       sta     OUTL
-;       lda     #>mocking_message
-;       sta     OUTH
-;       jsr     move_and_print                  ; print it
-
-        jsr     mockingboard_detect_slot4       ; call detection routine
-        cpx     #$1
-        beq     mockingboard_found
-
-;       lda     #<not_message                   ; if not found, print that
-;       sta     OUTL
-;       lda     #>not_message
-;       sta     OUTH
-;       inc     CV
-;       jsr     move_and_print
-
-;       jmp     forever_loop                    ; and wait forever
-
-mockingboard_found:
-;       lda     #<found_message                 ; print found message
-;       sta     OUTL
-;       lda     #>found_message
-;       sta     OUTH
-;       inc     CV
-;       jsr     move_and_print
+	jsr	mockingboard_detect_slot4
 
         ;============================
         ; Init the Mockingboard
@@ -110,7 +52,6 @@ mockingboard_found:
         ;==================
 
         jsr     pt3_init_song
-
 
 	;=============================
 	; Load graphic page0
@@ -237,10 +178,10 @@ display_loop:
 	; -582	-- erase     22+4*(8+6+126) = 582
 	; -696  -- move+draw 4*(16+26+6+126) = 696
 	;  -10  -- keypress
-	; -369	-- calc values
+	; -387	-- calc values
 	; -997  -- mockingboard out
 	;=======
-	; 1896
+	; 1878
 
 pad_time:
 
@@ -270,7 +211,7 @@ pad_time:
 
 	; erase yellow
 
-	lda	yellow_x				; 4
+	lda	yellow_x			; 4
 	and	#$7f				; 2
 	tax					; 2
 
@@ -413,7 +354,7 @@ pad_time:
 	;============================
 
 
-	jsr	pt3_make_frame		; 6+363	= 369
+	jsr	pt3_make_frame		; 6+381	= 387
 	jsr	mb_write_frame		; 6+991 = 997
 
 
@@ -421,12 +362,20 @@ pad_time:
 	; WAIT for VBLANK to finish
 	;============================
 
-	; Try X=125 Y=3 cycles=1894R2
+	; Try X=6 Y=54 cycles=1945R5
+;	nop
+;	lda	TEMP
 
+	; Try X=6 Y=52 cycles=1873R5
 	nop
+	lda	TEMP
 
-	ldy	#3							; 2
-loop1:	ldx	#125							; 2
+	; Try X=124 Y=3 cycles=1879R4
+
+
+
+	ldy	#52							; 2
+loop1:	ldx	#6							; 2
 loop2:	dex								; 2
 	bne	loop2							; 2nt/3
 	dey								; 2
@@ -515,7 +464,6 @@ smc_raster_color1_2:
 
 
 
-
 .include "gr_simple_clear.s"
 .include "gr_offsets.s"
 .include "gr_unrle.s"
@@ -537,8 +485,10 @@ yellow_x:	.byte $20
 green_x:	.byte $30
 blue_x:		.byte $40
 
-.include "pt3_lib_ci.s"
-.include "mockingboard_a.s"
+.include "pt3_lib_core.s"
+.include "pt3_lib_init.s"
+.include "pt3_lib_mockingboard.s"
+.include "pt3_write_frame.s"
 
 ;=============
 ; include song

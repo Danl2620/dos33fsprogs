@@ -1,66 +1,147 @@
+TODO Before release:
+====================
+	?
+	
+
 KNOWN BUGS:
+===========
++ Kicking slugs will kill slugs behind you too, need to check DIRECTION
+
++ Ledge in L4 it's possible to end up standing off edge of cliff
+
++ shooting through shield is broken (it's worse when facing right)
+	need a +2 in the collision code somewhere probably
 + ootw: pool monster grabs you a edge of pool (glitch)
 + intro: there's still a bit of a pause when the elevator door finishes opening
-
-TODO:
-
-
-Movement:
 + running: Missing one running frame (?)
-+ ability to run+jump
-+ ability to kick while crouching
-+ ability to shoot
-
-sprites_to_draw:
-+ physicist crouch-kicking
-+ physicist run+jumping
-+ physicist swimming
-+ physicist getting out of pool
-+ beast tripping
-+ physicist holding gun
-+ physicist shot
-
-pool:
-+ background of beast moving off
-+ adjust tentacle to not go off edge of screen
-+ adjust x position of tentacle grab
-
-cavern:
-+ slugs on ceiling drop
-+ background of beast moving off ?
-+ adjust slug attack range
-
-underwater:
-+ add arrival-underwater scene
-+ falling console
-+ ability to swim
-+ tentacles to grab
-+ shimmery water at top
-+ ripples in water
-
-beast:
-+ hook up beast ending cutscene
-+ compress/transparency beast ending cutscene
-+ add beast tripping
-
-rope_room:
-+ re-enable earthquake while swinging
-+ speed up background if possible
++ L2 vent -- we fall behind the vent
+  No easy way to fix that unless we split if off from
+  the friend drawing code, or change the Z order of the friend
 
 
-Level/Checkpoint #2:
+MISSING SPRITES:
+================
+  + physicist run+jumping
+  + physicist swimming
+  + beast tripping
+  + alien running
+  + friend running
+  + alien punching animation
 
-cage room:
-+ Swing in the cage
-+ Ability to pick up gun, with all that entails
-+ Animation of friend?
-+ animated miners in background
-+ 1-bit audio recording of friend talking
 
-Jail:
-+ Foreground animations
-+ Doors that open/blast?
+BEHAVIOR DIFFERENCES:
+=====================
 
-Elevator:
-+ Elevator ride, view of city?
-+ music play when viewing city
++ General differences
+	* physicist behavior:
+		- should be separate sprites for left/right
+		  (not one flipped sprite)
+		- actual game has much more variety of movement positions
+		- if have gun, should be visible when running.  Hard to do
+		  this in a way that looks right
+
+	* alien guard behavior:
+		- will punch you if you get too close
+		- become alert if they hear an explosion
+		- l4, if you draw gun (but not fire) guard won't shoot you,
+		  but instead will yell at you a bit
+		- l2 first battle has very elaborate behavior with an
+			ofscreen battle and your friend running back,
+			and eventually more waves of aliens will come
+			after you
+		- l2/room5: alien appears to left of door.  Works on panel to
+			unlock it, comes in and bothers friend after
+			we call down.
+			also I think if you wait long enough more aliens
+			appear if you try to go left.
+		- should be able to crouch/shoot
+		- should be able to blast/shield
+
+	* gun behavior:
+		- doors/walls should explode outward away from blast
+		  *unless* there is another door/wall behind it
+		- laser should show sparks when hits shields/walls
+		- shield cannot be placed if room/floor wrong
+		- shield collapse animation if blown up with blast
+
+	* door behavior:
+		- blasted doors, the remains appear partly in front
+
+
++ Level/Checkpoint 1
+
+	* underwater:
+		- underwater in game there is a subtle water-motion effect
+		- bubble motion is fancier in real thing
+
+	* by the pool:
+		- get out of water, you face forward unless key pressed
+		  (we don't have a forward sprite as it looks weird)
+		- arrival, the beast movement seems to depend on your xpos?
+		- small things like birds flying are not implemented
+
+	* caverns:
+		- beast on hill and 2nd screen -- complex, only appears if
+		  you happen to leave same time beast does?  then movement
+		  depends on xposition?
+		- sometimes falling rocks can follow you to next screen
+
+	* rope:
+		- earthquake should happen while on rope
+
+	* beast:
+		- beast can/should trip and fall if it gets too close but
+			then you pull away
+		- beast should climb hill in rope room better
+		- beast has shadow when standing
+
+	* slugs:
+		- slugs possibly can fall due to earthquake?
+		- they should explode away from kick
+			currently always explode right
+
++ Level/Checkpoint 2
+
+	* cage room:
+		- in game, after some time the guard calms down
+
+	* jail:
+		- in actual game, foreground animations can continue
+		  to next screen?
+		- flashes on wall from gunfire in neighboring room
+
+	* level end:
+		- you should fall/scroll halfway down the shaft, then roll
+		  a bit before falling into L3
+
+	* Elevator:
+		- should be able to change elevator direction mid-floor
+		- Elevator should shoot sparks every 20 frames or so
+
+	* View:
+		- does music play when looking at city?
+		  Not original Amiga version
+
++ Level/Checkpoint #3:
+	* Actual game shakes the camera when you hit the ground after falling
+
++ Level/Checkpoint #4:
+	* Implement guard (shooting, taunting)
+
++ Level/Checkpoint #5
+	* Allow falling into first pit
+
+
+FUTURE WORK:
+============
+
+* Intro
+  + add Mockingboard music
+
+* L1 pool
+  + adjust tentacle to not go off edge of screen
+  + adjust x position of tentacle grab
+
+* l2 vent room
+  + Make guard appear
+
